@@ -1,20 +1,22 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { Navigate } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchUserFromToken } from "../features/authSlice";
 
-const PublicRoute = ({ element }) => {
-  const { isAuthenticated, authToken, user, isAdmin } = useSelector((state) => state.auth);
-  const [shouldRedirect, setShouldRedirect] = useState(false);
+const PublicRoute = ({ element, restricted }) => {
+  const dispatch = useDispatch();
+  const { isAuthenticated, authToken, isAdmin } = useSelector(
+    (state) => state.auth
+  );
 
   useEffect(() => {
-    if (isAuthenticated && authToken && user) {
-      const redirectTo = isAdmin ? "/admin-panel" : "/home";
-      setShouldRedirect(true);
+    if (authToken) {
+      dispatch(fetchUserFromToken(authToken));
     }
-  }, [isAuthenticated, authToken, user, isAdmin]);
+  }, [authToken, dispatch]);
 
-  if (shouldRedirect) {
-    return <Navigate to={isAdmin ? "/admin-panel" : "/home"} replace />;
+  if (isAuthenticated && restricted) {
+    return <Navigate to={isAdmin ? "/admin-panel" : "/home"} />;
   }
 
   return element;

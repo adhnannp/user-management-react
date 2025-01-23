@@ -1,5 +1,7 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const fs = require('fs');
+const path = require('path');
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "1h" });
@@ -70,21 +72,55 @@ exports.registerUser = async (req, res) => {
 exports.uploadProfilePicture = async (req, res) => {
   try {
     const { id } = req.params;
-    const imagePath = req.file.path;
-    const updatedUser = await User.findByIdAndUpdate(
-      id,
-      { profilePicture: imagePath },
-      { new: true }
-    );
-    if (!updatedUser) {
+    const imagePath = req.file.filename;
+    const user = await User.findById(id);
+    if (!user) {
       return res.status(404).json({ error: 'User not found.' });
     }
+    if (user.profilePicture) {
+      const currentImagePath =  path.resolve('uploads', user.profilePicture);;
+      fs.unlink(currentImagePath, (err) => {
+        if (err) {
+          console.error('Error deleting the existing profile picture:', err);
+        }
+      });
+    }
+    user.profilePicture = imagePath;
+    await user.save();
+
     res.status(200).json({
       message: 'Profile picture updated successfully.',
-      user: updatedUser,
+      user: {
+        id: user._id,
+        userName: user.userName,
+        email: user.email,
+        profilePicture : user.profilePicture,
+        isAdmin: user.isAdmin,
+      },
     });
   } catch (error) {
     console.error('Error updating profile picture:', error);
     res.status(500).json({ error: 'Failed to update profile picture.' });
+  }
+};
+
+exports.getUser =  async (req, res) => {
+  try {
+    const user = await User.findById(req.user);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+    res.status(200).json({
+      user: {
+        id: user._id,
+        userName: user.userName,
+        email: user.email,
+        profilePicture: user.profilePicture,
+        isAdmin: user.isAdmin,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error });
   }
 };

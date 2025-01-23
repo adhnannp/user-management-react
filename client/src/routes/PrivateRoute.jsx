@@ -1,37 +1,22 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { Navigate } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchUserFromToken } from "../features/authSlice";
 
-const PrivateRoute = ({ element, isAdminRequired }) => {
-  const { isAuthenticated, isAdmin, authToken, user } = useSelector((state) => state.auth);
-  const [shouldRedirect, setShouldRedirect] = useState(false);
+const PrivateRoute = ({ element }) => {
+  const dispatch = useDispatch();
+  const { isAuthenticated, authToken, isAdmin } = useSelector(
+    (state) => state.auth
+  );
 
   useEffect(() => {
-    if (!isAuthenticated || !authToken || !user) {
-      setShouldRedirect(true);
+    if (authToken) {
+      dispatch(fetchUserFromToken(authToken));
     }
+  }, [authToken, dispatch]);
 
-    if (isAdminRequired && !isAdmin) {
-      setShouldRedirect(true);
-    }
-
-    if (!isAdminRequired && isAdmin) {
-      setShouldRedirect(true);
-    }
-  }, [isAuthenticated, authToken, user, isAdmin, isAdminRequired]);
-
-  if (shouldRedirect) {
-    if (!isAuthenticated || !authToken || !user) {
-      return <Navigate to="/" replace />;
-    }
-
-    if (isAdminRequired && !isAdmin) {
-      return <Navigate to="/home" replace />;
-    }
-
-    if (!isAdminRequired && isAdmin) {
-      return <Navigate to="/admin-panel" replace />;
-    }
+  if (!isAuthenticated) {
+    return <Navigate to={isAdmin ? "/admin" : "/"} />;
   }
 
   return element;

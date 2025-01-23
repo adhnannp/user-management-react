@@ -4,12 +4,12 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import './UserHome.css';
 import default_avatar from '../../assets/default-avatar.jpg';
-import { logout } from '../../features/authSlice';
+import { logout, updateUser } from '../../features/authSlice';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
 const UserHome = () => {
-  const IMG_FILE_REF = "../../../../server/uploads";
+  const IMG_FILE_REF = "http://localhost:3000/uploads/";
   const { user } = useSelector((state) => state.auth);
   const fileInputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
@@ -39,8 +39,8 @@ const UserHome = () => {
             withCredentials: true,
           }
         );
+        dispatch(updateUser(response.data.user))
         toast.success('Profile picture updated successfully.');
-        console.log('Response:', response.data);
       } catch (error) {
         console.log("userdata:",user)
         console.error('Error uploading image:', error);

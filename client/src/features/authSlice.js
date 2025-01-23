@@ -50,6 +50,21 @@ export const registerUser = createAsyncThunk("auth/registerUser", async (userDet
   }
 });
 
+export const fetchUserFromToken = createAsyncThunk(
+  "auth/fetchUserFromToken",
+  async (token, thunkAPI) => {
+    try {
+      const response = await axios.get(`${API_URL}/user/data`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.data;
+    } catch (error) {
+      toast.error("Failed to fetch user data.");
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
+
 const authSlice = createSlice({
   name: "auth",
   initialState: {
@@ -68,9 +83,28 @@ const authSlice = createSlice({
       state.authToken = null;
       localStorage.removeItem("authToken");
     },
+    updateUser(state, action) {
+      state.user = { ...state.user, ...action.payload };
+    },
   },
   extraReducers: (builder) => {
     builder
+    // Fetch user from token
+      .addCase(fetchUserFromToken.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchUserFromToken.fulfilled, (state, action) => {
+        state.loading = false;
+        state.isAuthenticated = true;
+        state.authToken = action.payload.token;
+        state.user = action.payload.user;
+        state.isAdmin = action.payload.user.isAdmin;
+      })
+      .addCase(fetchUserFromToken.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
     //userlogin
       .addCase(userLogin.pending, (state) => {
         state.loading = true;
@@ -125,5 +159,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout } = authSlice.actions;
+export const { logout,updateUser } = authSlice.actions;
 export default authSlice.reducer;
