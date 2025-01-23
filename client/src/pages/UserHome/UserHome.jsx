@@ -78,7 +78,7 @@ const UserHome = () => {
         <div className="profile-section">
           <div className="profile-image-container">
             <img
-              src={`${IMG_FILE_REF}${user.profilePicture}` || default_avatar}
+              src={user.profilePicture ? `${IMG_FILE_REF}${user.profilePicture}` : default_avatar}
               alt={`${user.userName}'s profile`}
               className="profile-image"
             />
