@@ -8,7 +8,7 @@ import { toast } from 'react-toastify';
 import axios from "axios";
 import Header from "../../components/Header";
 import { logout } from '../../features/authSlice'; 
-import { useDispatch} from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
 const AdminHome = () => {
@@ -25,13 +25,19 @@ const AdminHome = () => {
   const [loading, setLoading] = useState(true);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const authToken = localStorage.getItem("authToken")
 
   const fetchUsers = async () => {
     try {
-      const response = await axios.get("http://localhost:3000/admin/get-users");
+      const response = await axios.get("http://localhost:3000/admin/get-users", {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
       setUsers(response.data.users);
     } catch (error) {
       console.error("Error fetching users:", error);
+      toast.error("Error fetching users.");
     } finally {
       setLoading(false);
     }
@@ -55,7 +61,7 @@ const AdminHome = () => {
   };
 
   const handleLogout = () => {
-    dispatch(logout()); 
+    dispatch(logout());
     navigate('/admin');
   };
 
@@ -70,15 +76,17 @@ const AdminHome = () => {
   const handleAddUser = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post("http://localhost:3000/admin/add-user", formData);
+      const response = await axios.post("http://localhost:3000/admin/add-user", formData, {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
       setUsers((prevUsers) => [...prevUsers, response.data.user]);
       setFormData({ userName: "", email: "", password: "" });
       setIsAddModalOpen(false);
       toast.success("User added successfully!");
-      console.log("User added successfully:", response.data.message);
     } catch (error) {
       toast.error(`Error adding user: ${error.response?.data || error.message}`);
-      console.error("Error adding user:", error.response?.data || error.message);
     }
   };
 
@@ -94,9 +102,12 @@ const AdminHome = () => {
 
   const handleEditUser = async (e) => {
     e.preventDefault();
-  
     try {
-      const response = await axios.post(`http://localhost:3000/admin/edit-user/${selectedUser._id}`, formData);
+      const response = await axios.post(`http://localhost:3000/admin/edit-user/${selectedUser._id}`, formData, {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
       const updatedUsers = users.map((user) =>
         user._id === selectedUser._id ? { ...user, ...formData } : user
       );
@@ -105,10 +116,8 @@ const AdminHome = () => {
       setSelectedUser(null);
       setFormData({ userName: "", email: "", password: "" });
       toast.success("User updated successfully!");
-      console.log("User updated successfully:", response.data.message);
     } catch (error) {
       toast.error(`Error updating user: ${error.response?.data.message || error.message}`);
-      console.error("Error updating user:", error.response?.data.message || error.message);
     }
   };
 
@@ -119,7 +128,11 @@ const AdminHome = () => {
 
   const handleDeleteUser = async () => {
     try {
-      await axios.delete(`http://localhost:3000/admin/delete-user/${selectedUser._id}`);
+      await axios.delete(`http://localhost:3000/admin/delete-user/${selectedUser._id}`, {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
       const updatedUsers = users.filter((user) => user._id !== selectedUser._id);
       setUsers(updatedUsers);
       setIsDeleteModalOpen(false);
@@ -127,7 +140,6 @@ const AdminHome = () => {
       toast.success("User deleted successfully!");
     } catch (error) {
       toast.error(`Error deleting user: ${error.response?.data.message || error.message}`);
-      console.error("Error deleting user:", error.response?.data.message || error.message);
     }
   };
 
@@ -135,92 +147,85 @@ const AdminHome = () => {
     <>
       <Header onSearch={handleSearch} onLogout={handleLogout} />
       <div className="admin-container">
-      <div className="content-wrapper">
-        <div className="header">
-          <button
-            className="add-user-btn"
-            onClick={() => setIsAddModalOpen(true)}
-          >
-            <UserPlus size={20} />
-            Add User
-          </button>
-        </div>
+        <div className="content-wrapper">
+          <div className="header">
+            <button className="add-user-btn" onClick={() => setIsAddModalOpen(true)}>
+              <UserPlus size={20} />
+              Add User
+            </button>
+          </div>
 
-        {loading ? (
-          <p>Loading...</p>
-        ) : (
-          <table className="users-table">
-            <thead>
-              <tr>
-                <th>Username</th>
-                <th>Email</th>
-                <th>Password</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.length > 0 ? (
-                users.map((user) => (
-                  <tr key={user._id}>
-                    <td>{user.userName}</td>
-                    <td>{user.email}</td>
-                    <td>{user.password}</td>
-                    <td>
-                      <div className="action-buttons">
-                        <button
-                          className="edit-btn"
-                          onClick={() => handleEditClick(user)}
-                        >
-                          <Pencil size={16} />
-                          Edit
-                        </button>
-                        <button
-                          className="delete-btn"
-                          onClick={() => handleDeleteClick(user)}
-                        >
-                          <Trash2 size={16} />
-                          Delete
-                        </button>
-                      </div>
+          {loading ? (
+            <p>Loading...</p>
+          ) : (
+            <table className="users-table">
+              <thead>
+                <tr>
+                  <th>No:</th>
+                  <th>Username</th>
+                  <th>Actions</th>
+                  <th>Email</th>
+                  <th>Password</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.length > 0 ? (
+                  users.map((user, index) => (
+                    <tr key={user._id}>
+                      <td>{index + 1}</td>
+                      <td>{user.userName}</td>
+                      <td>{user.email}</td>
+                      <td>{user.password}</td>
+                      <td>
+                        <div className="action-buttons">
+                          <button className="edit-btn" onClick={() => handleEditClick(user)}>
+                            <Pencil size={16} />
+                            Edit
+                          </button>
+                          <button className="delete-btn" onClick={() => handleDeleteClick(user)}>
+                            <Trash2 size={16} />
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="4" style={{ textAlign: "center" }}>
+                      No users found
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="4" style={{ textAlign: "center" }}>
-                    No users found
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        )}
+                )}
+              </tbody>
+            </table>
+          )}
 
-        {isAddModalOpen && (
-          <AddUserModal
-            formData={formData}
-            handleInputChange={handleInputChange}
-            handleAddUser={handleAddUser}
-            closeModal={() => setIsAddModalOpen(false)}
-          />
-        )}
-        {isEditModalOpen && (
-          <EditUserModal
-            formData={formData}
-            handleInputChange={handleInputChange}
-            handleEditUser={handleEditUser}
-            closeModal={() => setIsEditModalOpen(false)}
-          />
-        )}
-        {isDeleteModalOpen && (
-          <DeleteConfirmationModal
-            selectedUser={selectedUser}
-            handleDeleteUser={handleDeleteUser}
-            closeModal={() => setIsDeleteModalOpen(false)}
-          />
-        )}
+          {isAddModalOpen && (
+            <AddUserModal
+              formData={formData}
+              handleInputChange={handleInputChange}
+              handleAddUser={handleAddUser}
+              closeModal={() => setIsAddModalOpen(false)}
+            />
+          )}
+          {isEditModalOpen && (
+            <EditUserModal
+              formData={formData}
+              handleInputChange={handleInputChange}
+              handleEditUser={handleEditUser}
+              closeModal={() => setIsEditModalOpen(false)}
+            />
+          )}
+          {isDeleteModalOpen && (
+            <DeleteConfirmationModal
+              selectedUser={selectedUser}
+              handleDeleteUser={handleDeleteUser}
+              closeModal={() => setIsDeleteModalOpen(false)}
+            />
+          )}
+        </div>
       </div>
-    </div>
     </>
   );
 };

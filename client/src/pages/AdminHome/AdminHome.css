@@ -235,3 +235,8 @@
   cursor: pointer;
   padding: 0 5px;
 }
+.sort-button{
+  background-color: #9eb9df;
+  font-size: larger;
+  cursor: pointer;
+}
